@@ -1,2 +1,3 @@
 # OkeleDB
-A Nuanced implementation of Database simply for learning purpose
+
+A Nuanced implementation of a Realtime Database, leveraging bbolt a simple Key value DB storage, specifically for learning purpose
