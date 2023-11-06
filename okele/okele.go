@@ -13,7 +13,7 @@ const (
 )
 
 type Collection struct {
-	bucket *bbolt.Bucket
+	Bucket *bbolt.Bucket
 }
 
 type Okele struct {
@@ -35,48 +35,51 @@ func New() (*Okele, error) {
 }
 
 func (o *Okele) CreateCollection(name string) (*Collection, error) {
-	coll := Collection{}
-	err := o.db.Update(func(tx *bbolt.Tx) error {
-		var (
-			err    error
-			bucket *bbolt.Bucket
-		)
-		bucket = tx.Bucket([]byte(name))
-		if bucket == nil {
-			bucket, err = tx.CreateBucket([]byte(name))
-			if err != nil {
-				return err
-			}
-		}
-
-		coll.bucket = bucket
-		return nil
-	})
+	tx, err := o.db.Begin(true)
 	if err != nil {
 		return nil, err
 	}
-	return &coll, nil
+	defer tx.Rollback()
+
+	// bucket := tx.Bucket([]byte(name))
+	// if bucket != nil {
+	// 	return &Collection{Bucket: bucket}, nil
+	// }
+
+	bucket, err := tx.CreateBucketIfNotExists([]byte(name))
+	if err != nil {
+		return nil, err
+	}
+
+	return &Collection{Bucket: bucket}, nil
 }
 
 func (o *Okele) Insert(collName string, data M) (uuid.UUID, error) {
 	id := uuid.New()
-	coll, err := o.CreateCollection(collName)
+
+	tx, err := o.db.Begin(true)
+	if err != nil {
+		return id, err
+	}
+
+	defer tx.Rollback()
+	bucket, err := tx.CreateBucketIfNotExists([]byte(collName))
+
 	if err != nil {
 		return id, err
 	}
 
 	for k, v := range data {
-		if err := coll.bucket.Put([]byte(k), []byte(v)); err != nil {
+		if err := bucket.Put([]byte(k), []byte(v)); err != nil {
 			return id, err
 		}
 	}
 
-	if err := coll.bucket.Put([]byte("id"), []byte(id.String())); err != nil {
+	if err := bucket.Put([]byte("id"), []byte(id.String())); err != nil {
 		return id, err
 	}
 
 	return id, nil
-	//coll.bucket.Put([]byte(id), []byte(coll))
 }
 
 // func (o *Okele) Get(coll *string, k string, query any) {

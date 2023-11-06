@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/oluwadamilarey/OkeleDB/okele"
@@ -19,13 +20,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	db.Insert("users", user)
+	id, err := db.Insert("users", user)
 	// coll, err := db.CreateCollection("user")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	//fmt.Printf("%+v\n", coll)
+	fmt.Printf("%+v\n", id)
 
 	// userData := make(map[string]string)
 	// if err := db.View(func(tx *bbolt.Tx) error {
