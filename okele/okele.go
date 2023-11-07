@@ -40,68 +40,45 @@ func (o *Okele) CreateCollection(name string) (*Collection, error) {
 		return nil, err
 	}
 	defer tx.Rollback()
-
-	// bucket := tx.Bucket([]byte(name))
-	// if bucket != nil {
-	// 	return &Collection{Bucket: bucket}, nil
-	// }
-
 	bucket, err := tx.CreateBucketIfNotExists([]byte(name))
 	if err != nil {
 		return nil, err
 	}
-
 	return &Collection{Bucket: bucket}, nil
 }
 
 func (o *Okele) Insert(collName string, data M) (uuid.UUID, error) {
 	id := uuid.New()
-
 	tx, err := o.db.Begin(true)
 	if err != nil {
 		return id, err
 	}
-
 	defer tx.Rollback()
 	bucket, err := tx.CreateBucketIfNotExists([]byte(collName))
-
 	if err != nil {
 		return id, err
 	}
-
 	for k, v := range data {
 		if err := bucket.Put([]byte(k), []byte(v)); err != nil {
 			return id, err
 		}
 	}
-
 	if err := bucket.Put([]byte("id"), []byte(id.String())); err != nil {
 		return id, err
 	}
-
-	return id, nil
+	return id, tx.Commit()
 }
 
-// func (o *Okele) Get(coll *string, k string, query any) {
+func (o *Okele) Select(coll string, query M) (M, error) {
+	tx, err := o.db.Begin(false)
+	if err != nil {
+		return nil, err
+	}
 
-// }
+	bucket := tx.Bucket([]byte(coll))
+	if bucket == nil {
+		return nil, fmt.Errorf("collection (%s) not found", coll)
+	}
 
-// db.Update(func(tx *bbolt.Tx) error {
-// 	bucket, err := tx.CreateBucket([]byte("users"))
-// 	if err != nil {
-// 		return err
-// 	}
-// 	id := uuid.New()
-
-// 	for k, v := range user {
-// 		if err := bucket.Put([]byte(k), []byte(v)); err != nil {
-// 			return err
-// 		}
-// 	}
-
-// 	if err := bucket.Put([]byte("id"), []byte(id.String())); err != nil {
-// 		return err
-// 	}
-
-// 	return nil
-// })
+	bucket.NextSequence()
+}
